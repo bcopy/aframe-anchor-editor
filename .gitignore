@@ -1,0 +1,7 @@
+.glitch-assets
+.node-gyp
+assets/
+dist/
+node_modules/
+src/*.glb
+src/assets/*.glb

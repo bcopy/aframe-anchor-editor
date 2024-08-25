@@ -1,0 +1,30 @@
+{
+  "name": "anchor-point-editor",
+  "version": "1.0.0",
+  "description": "A-Frame Anchor Point Editor",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development --watch"
+  },
+  "dependencies": {
+    "aframe": "^1.6.0",
+    "aframe-extras": "^7.5.1",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/aframe": "^1.2.7",
+    "@types/express": "^4.17.13",
+    "@types/three": "^0.137.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "html-webpack-plugin": "^5.5.0",
+    "ts-loader": "^9.4.2",
+    "typescript": "^4.9.5",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
+  },
+  "engines": {
+    "node": "14.x"
+  }
+}
