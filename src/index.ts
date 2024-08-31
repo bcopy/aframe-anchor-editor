@@ -74,6 +74,18 @@ AFRAME.registerComponent('anchor-point-editor', {
       console.log('Model loaded');
       this.centerCameraOnModel();
     });
+
+    // Add key listener for 'R' key
+    this.onKeyDown = this.onKeyDown.bind(this);
+    document.addEventListener('keydown', this.onKeyDown);
+  },
+
+  onKeyDown: function (this: any, event: KeyboardEvent) {
+    if (event.code === 'KeyR' && this.tempAnchor) {
+      this.confirmCurrentAnchor();
+    } else if (event.code === 'KeyP') {
+      this.printAndCopyPoints();
+    }
   },
 
   centerCameraOnModel: function (this: any) {
@@ -141,13 +153,29 @@ AFRAME.registerComponent('anchor-point-editor', {
     anchorEl.appendChild(normalIndicator);
     return anchorEl;
   },
+
+  confirmCurrentAnchor: function (this: any) {
+    if (this.tempAnchor) {
+      const position = new THREE.Vector3();
+      this.tempAnchor.object3D.getWorldPosition(position);
+      
+      // Assuming the first child of tempAnchor is the normal indicator
+      const normalIndicator = this.tempAnchor.firstChild;
+      const normal = new THREE.Vector3(0, 1, 0); // Default up vector
+      normalIndicator.object3D.getWorldDirection(normal);
+      normal.negate(); // Negate because getWorldDirection returns the direction the object is facing
+
+      this.confirmAnchorPoint(position, normal);
+      this.tempAnchor = null;
+    }
+  },
   confirmAnchorPoint: function (this: any, point: THREE.Vector3 | {x: number, y: number, z: number}, 
     normal: THREE.Vector3 | {x: number, y: number, z: number}) {
     const anchorEl = this.createPointVisualization(point, normal, 'red', 'green');
     this.el.sceneEl.appendChild(anchorEl);
 
     const relativePosition = this.getRelativePosition(point instanceof THREE.Vector3 ? point : new THREE.Vector3(point.x, point.y, point.z));
-    this.anchorPoints.push({position: point, normal: normal, relativePosition: relativePosition});
+    this.anchorPoints.push({position: point, normal: normal});
 
     if (this.tempAnchor) {
     this.tempAnchor.parentNode.removeChild(this.tempAnchor);
@@ -167,6 +195,33 @@ AFRAME.registerComponent('anchor-point-editor', {
     this.el.sceneEl.appendChild(this.tempAnchor);
 
     this.updateUI(point, normal);
+  },
+
+  printAndCopyPoints: function (this: any) {
+    const pointsData = this.anchorPoints.map((point: any) => ({
+      position: {
+        x: point.position.x,
+        y: point.position.y,
+        z: point.position.z
+      },
+      normal: {
+        x: point.normal.x,
+        y: point.normal.y,
+        z: point.normal.z
+      },
+      relativePosition: point.relativePosition
+    }));
+
+    const jsonData = JSON.stringify(pointsData, null, 2);
+    console.log('Anchor Points:');
+    console.log(jsonData);
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(jsonData).then(() => {
+      console.log('Anchor points data copied to clipboard');
+    }).catch(err => {
+      console.error('Failed to copy anchor points data: ', err);
+    });
   },
 
   getRelativePosition: function (this: any, point: THREE.Vector3) {
@@ -213,10 +268,9 @@ AFRAME.registerComponent('anchor-point-editor', {
       <h3>Anchor Point Editor</h3>
       <div id="anchorList"></div>
       <div id="confirmButton"></div>
-      <button id="generateButton">Generate 10 Random Anchors</button>
       <div style="margin-top: 10px;">
         <h4>Controls:</h4>
-        <p>WASD: Move | Q: Up, E: Down | Mouse: Look | Click: Place Temp Anchor</p>
+        <p>WASD: Move | Q: Up, E: Down | P: Dump to console and clipboard | Mouse: Look | Click: Place Temp Anchor</p>
       </div>
       <div style="margin-top: 10px;">
         <label for="speedSlider">Movement Speed: </label>
@@ -226,7 +280,7 @@ AFRAME.registerComponent('anchor-point-editor', {
     `;
     document.body.appendChild(ui);
 
-    document.getElementById('generateButton')?.addEventListener('click', () => this.generateRandomAnchors(10));
+    // document.getElementById('generateButton')?.addEventListener('click', () => this.generateRandomAnchors(10));
 
     const slider = document.getElementById('speedSlider') as HTMLInputElement;
     const speedValue = document.getElementById('speedValue');
@@ -244,13 +298,16 @@ AFRAME.registerComponent('anchor-point-editor', {
   updateUI: function (this: any, point?: THREE.Vector3, normal?: THREE.Vector3) {
     const anchorList = document.getElementById('anchorList');
     if (anchorList) {
-      anchorList.innerHTML = '<pre>' + JSON.stringify(this.anchorPoints, null, 2) + '</pre>';
+      anchorList.innerHTML = '<pre>' + this.anchorPoints.length + ' point(s) recorded.</pre>';
     }
   
     const confirmButton = document.getElementById('confirmButton');
     if (confirmButton) {
       if (point && normal) {
-        confirmButton.innerHTML = `<button onclick='document.querySelector("[anchor-point-editor]").components["anchor-point-editor"].confirmAnchorPoint(${JSON.stringify({x: point.x, y: point.y, z: point.z})}, ${JSON.stringify({x: normal.x, y: normal.y, z: normal.z})})'>Confirm Anchor Point</button>`;
+        confirmButton.innerHTML = `
+          <button onclick='document.querySelector("[anchor-point-editor]").components["anchor-point-editor"].confirmCurrentAnchor()'>
+            Confirm Anchor Point (or press 'R')
+          </button>`;
       } else {
         confirmButton.innerHTML = '';
       }
