@@ -1,6 +1,8 @@
 import 'aframe';
 import 'aframe-extras';
 import * as THREE from 'three';
+const NORMAL_INDICATOR_LENGTH = 0.5;  // Adjust this value to change the length of the normal indicator
+const CONE_OFFSET = 0.9555;
 
 AFRAME.registerComponent('custom-controls', {
   schema: {
@@ -103,66 +105,77 @@ AFRAME.registerComponent('anchor-point-editor', {
     }
   },
 
-  showTempAnchor: function (this: any, point: THREE.Vector3, normal: THREE.Vector3) {
-    if (this.tempAnchor) {
-      this.tempAnchor.parentNode.removeChild(this.tempAnchor);
-    }
-    
-    this.tempAnchor = document.createElement('a-entity');
-    this.tempAnchor.setAttribute('position', point);
-    this.tempAnchor.setAttribute('geometry', {primitive: 'sphere', radius: 0.02});
-    this.tempAnchor.setAttribute('material', {color: 'yellow'});
-    
-    const normalIndicator = document.createElement('a-entity');
-    normalIndicator.setAttribute('geometry', {primitive: 'cylinder', radius: 0.005, height: 0.05});
-    normalIndicator.setAttribute('material', {color: 'blue'});
-    normalIndicator.setAttribute('position', {x: 0, y: 0.025, z: 0});
-    
-    const rotationTo = new THREE.Matrix4().lookAt(new THREE.Vector3(), normal, new THREE.Vector3(0, 1, 0));
-    const quaternion = new THREE.Quaternion().setFromRotationMatrix(rotationTo);
-    normalIndicator.object3D.quaternion.copy(quaternion);
-    
-    this.tempAnchor.appendChild(normalIndicator);
-    this.el.sceneEl.appendChild(this.tempAnchor);
-    
-    this.updateUI(point, normal);
-  },
-  confirmAnchorPoint: function (this: any, point: THREE.Vector3, normal: THREE.Vector3) {
+  createPointVisualization: function(point: THREE.Vector3 | {x: number, y: number, z: number}, 
+    normal: THREE.Vector3 | {x: number, y: number, z: number}, 
+    sphereColor: string, 
+    coneColor: string): HTMLElement {
     const anchorEl = document.createElement('a-entity');
-    anchorEl.setAttribute('position', point);
+    const pointVector = point instanceof THREE.Vector3 ? point : new THREE.Vector3(point.x, point.y, point.z);
+    const normalVector = normal instanceof THREE.Vector3 ? normal : new THREE.Vector3(normal.x, normal.y, normal.z);
+
+    anchorEl.setAttribute('position', pointVector);
     anchorEl.setAttribute('geometry', {primitive: 'sphere', radius: 0.02});
-    anchorEl.setAttribute('material', {color: 'red'});
-    
+    anchorEl.setAttribute('material', {color: sphereColor});
+
     const normalIndicator = document.createElement('a-entity');
-    normalIndicator.setAttribute('geometry', {primitive: 'cylinder', radius: 0.005, height: 0.05});
-    normalIndicator.setAttribute('material', {color: 'green'});
-    normalIndicator.setAttribute('position', {x: 0, y: 0.025, z: 0});
+    normalIndicator.setAttribute('geometry', {
+    primitive: 'cone', 
+    radiusBottom: 0.08, 
+    radiusTop: 0.01, 
+    height: NORMAL_INDICATOR_LENGTH
+    });
+    normalIndicator.setAttribute('material', {color: coneColor});
+
+    // Position the cone so its base is closer to the anchor point
+    const conePosition = new THREE.Vector3().addVectors(
+      pointVector,
+      normalVector.clone().multiplyScalar(CONE_OFFSET + NORMAL_INDICATOR_LENGTH / 2)
+    );
+    normalIndicator.setAttribute('position', conePosition);
     
-    const rotationTo = new THREE.Matrix4().lookAt(new THREE.Vector3(), normal, new THREE.Vector3(0, 1, 0));
-    const quaternion = new THREE.Quaternion().setFromRotationMatrix(rotationTo);
-    normalIndicator.object3D.quaternion.copy(quaternion);
+    // Orient the cone to align with the normal, pointing outward from the surface
+    const lookAtPoint = new THREE.Vector3().addVectors(conePosition, normalVector);
+    normalIndicator.object3D.lookAt(lookAtPoint);
+    normalIndicator.object3D.rotateX(Math.PI / 2);
     
     anchorEl.appendChild(normalIndicator);
+    return anchorEl;
+  },
+  confirmAnchorPoint: function (this: any, point: THREE.Vector3 | {x: number, y: number, z: number}, 
+    normal: THREE.Vector3 | {x: number, y: number, z: number}) {
+    const anchorEl = this.createPointVisualization(point, normal, 'red', 'green');
     this.el.sceneEl.appendChild(anchorEl);
-    
-    const relativePosition = this.getRelativePosition(point);
+
+    const relativePosition = this.getRelativePosition(point instanceof THREE.Vector3 ? point : new THREE.Vector3(point.x, point.y, point.z));
     this.anchorPoints.push({position: point, normal: normal, relativePosition: relativePosition});
-    
+
     if (this.tempAnchor) {
-      this.tempAnchor.parentNode.removeChild(this.tempAnchor);
-      this.tempAnchor = null;
+    this.tempAnchor.parentNode.removeChild(this.tempAnchor);
+    this.tempAnchor = null;
     }
 
     this.updateUI();
   },
 
+  showTempAnchor: function (this: any, point: THREE.Vector3 | {x: number, y: number, z: number}, 
+    normal: THREE.Vector3 | {x: number, y: number, z: number}) {
+    if (this.tempAnchor) {
+    this.tempAnchor.parentNode.removeChild(this.tempAnchor);
+    }
+
+    this.tempAnchor = this.createPointVisualization(point, normal, 'yellow', 'blue');
+    this.el.sceneEl.appendChild(this.tempAnchor);
+
+    this.updateUI(point, normal);
+  },
+
   getRelativePosition: function (this: any, point: THREE.Vector3) {
-    const modelPosition = this.el.object3D.position;
-    return {
-      x: point.x - modelPosition.x,
-      y: point.y - modelPosition.y,
-      z: point.z - modelPosition.z
-    };
+      const modelPosition = this.el.object3D.position;
+      return {
+        x: point.x - modelPosition.x,
+        y: point.y - modelPosition.y,
+        z: point.z - modelPosition.z
+      };
   },
 
   generateRandomAnchors: function (this: any, count: number) {
