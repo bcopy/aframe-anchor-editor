@@ -7,12 +7,12 @@
   <body>
     <a-scene>
       <a-assets>
-        <a-asset-item id="rock-model" src="https://cdn.glitch.global/d4e4a7cf-8a22-4d4f-83d0-1e70d80546ed/underwater_rock_tunnel.glb?v=1724585738983"></a-asset-item>
+        <a-asset-item id="rock-model" src="assets/underwater_rock_tunnel.glb"></a-asset-item>
       </a-assets>
 
       <a-entity id="rock" gltf-model="#rock-model" anchor-point-editor scale="0.05 0.05 0.05" position="0 0 0"></a-entity>
       
-      <a-entity id="rig" movement-controls="fly: true;" custom-controls="speed: 0.3">
+      <a-entity id="rig" movement-controls="fly: true;" custom-controls="speed: 2">
         <a-entity id="camera" camera look-controls position="0 1.6 0">
           <a-entity cursor="fuse: false;"
                     raycaster="objects: [gltf-model]"

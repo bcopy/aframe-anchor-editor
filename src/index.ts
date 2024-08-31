@@ -4,7 +4,7 @@ import * as THREE from 'three';
 
 AFRAME.registerComponent('custom-controls', {
   schema: {
-    speed: {type: 'number', default: 0.3}
+    speed: {type: 'number', default: 2}
   },
   init: function (this: any) {
     this.moveVector = new THREE.Vector3(0, 0, 0);
@@ -13,25 +13,47 @@ AFRAME.registerComponent('custom-controls', {
     document.addEventListener('keydown', this.onKeyDown);
     document.addEventListener('keyup', this.onKeyUp);
   },
+
   onKeyDown: function (this: any, event: KeyboardEvent) {
     switch (event.code) {
+      case 'KeyW': this.moveVector.z = 1; break;
+      case 'KeyS': this.moveVector.z = -1; break;
+      case 'KeyA': this.moveVector.x = -1; break;
+      case 'KeyD': this.moveVector.x = 1; break;
       case 'KeyQ': this.moveVector.y = 1; break;
       case 'KeyE': this.moveVector.y = -1; break;
     }
   },
+
   onKeyUp: function (this: any, event: KeyboardEvent) {
     switch (event.code) {
+      case 'KeyW':
+      case 'KeyS': this.moveVector.z = 0; break;
+      case 'KeyA':
+      case 'KeyD': this.moveVector.x = 0; break;
       case 'KeyQ':
-      case 'KeyE':
-        this.moveVector.y = 0;
-        break;
+      case 'KeyE': this.moveVector.y = 0; break;
     }
   },
-  tick: function (this: any) {
-    const movementSpeed = this.data.speed;
-    const displacement = this.moveVector.clone().multiplyScalar(movementSpeed);
-    this.el.object3D.position.add(displacement);
+
+  tick: function (this: any, time: number, deltaTime: number) {
+    if (!this.el.sceneEl.is('vr-mode')) {
+      const movementSpeed = this.data.speed;
+      const rotation = this.el.object3D.rotation;
+      const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(1, 0, 0), rotation.x);
+      const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotation.y);
+      
+      const movement = new THREE.Vector3()
+        .addScaledVector(forward, this.moveVector.z)
+        .addScaledVector(right, this.moveVector.x)
+        .addScaledVector(new THREE.Vector3(0, 1, 0), this.moveVector.y);
+
+      movement.normalize().multiplyScalar(movementSpeed * (deltaTime / 1000));
+      
+      this.el.object3D.position.add(movement);
+    }
   },
+
   remove: function (this: any) {
     document.removeEventListener('keydown', this.onKeyDown);
     document.removeEventListener('keyup', this.onKeyUp);
@@ -185,8 +207,8 @@ AFRAME.registerComponent('anchor-point-editor', {
       </div>
       <div style="margin-top: 10px;">
         <label for="speedSlider">Movement Speed: </label>
-        <input type="range" id="speedSlider" min="0.1" max="1" step="0.1" value="0.3">
-        <span id="speedValue">0.3</span>
+        <input type="range" id="speedSlider" min="0.1" max="10" step="0.5" value="2">
+        <span id="speedValue">2</span>
       </div>
     `;
     document.body.appendChild(ui);
