@@ -2,7 +2,7 @@ import 'aframe';
 import 'aframe-extras';
 import * as THREE from 'three';
 const NORMAL_INDICATOR_LENGTH = 0.5;  // Adjust this value to change the length of the normal indicator
-const CONE_OFFSET = 0.9555;
+const CONE_OFFSET = 0.001;
 
 AFRAME.registerComponent('custom-controls', {
   schema: {
@@ -126,7 +126,7 @@ AFRAME.registerComponent('anchor-point-editor', {
     const normalVector = normal instanceof THREE.Vector3 ? normal : new THREE.Vector3(normal.x, normal.y, normal.z);
 
     anchorEl.setAttribute('position', pointVector);
-    anchorEl.setAttribute('geometry', {primitive: 'sphere', radius: 0.02});
+    anchorEl.setAttribute('geometry', {primitive: 'sphere', radius: 0.2});
     anchorEl.setAttribute('material', {color: sphereColor});
 
     const normalIndicator = document.createElement('a-entity');
@@ -141,7 +141,7 @@ AFRAME.registerComponent('anchor-point-editor', {
     // Position the cone so its base is closer to the anchor point
     const conePosition = new THREE.Vector3().addVectors(
       pointVector,
-      normalVector.clone().multiplyScalar(CONE_OFFSET + NORMAL_INDICATOR_LENGTH / 2)
+      normalVector.clone()    // .multiplyScalar(CONE_OFFSET + NORMAL_INDICATOR_LENGTH / 2)
     );
     normalIndicator.setAttribute('position', conePosition);
     
@@ -200,14 +200,14 @@ AFRAME.registerComponent('anchor-point-editor', {
   printAndCopyPoints: function (this: any) {
     const pointsData = this.anchorPoints.map((point: any) => ({
       position: {
-        x: point.position.x,
-        y: point.position.y,
-        z: point.position.z
+        x: parseFloat(point.position.x).toFixed(2),
+        y: parseFloat(point.position.y).toFixed(2),
+        z: parseFloat(point.position.z).toFixed(2)
       },
       normal: {
-        x: point.normal.x,
-        y: point.normal.y,
-        z: point.normal.z
+        x: parseFloat(point.normal.x).toFixed(2),
+        y: parseFloat(point.normal.y).toFixed(2),
+        z: parseFloat(point.normal.z).toFixed(2)
       },
       relativePosition: point.relativePosition
     }));
@@ -274,8 +274,8 @@ AFRAME.registerComponent('anchor-point-editor', {
       </div>
       <div style="margin-top: 10px;">
         <label for="speedSlider">Movement Speed: </label>
-        <input type="range" id="speedSlider" min="0.1" max="10" step="0.5" value="2">
-        <span id="speedValue">2</span>
+        <input type="range" id="speedSlider" min="1" max="50" step="2" value="20">
+        <span id="speedValue">20</span>
       </div>
     `;
     document.body.appendChild(ui);

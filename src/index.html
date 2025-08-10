@@ -7,12 +7,13 @@
   <body>
     <a-scene>
       <a-assets>
-        <a-asset-item id="rock-model" src="assets/underwater_rock_tunnel.glb"></a-asset-item>
+        <a-asset-item id="rock-model" src="assets/triplets.glb"></a-asset-item>
       </a-assets>
 
-      <a-entity id="rock" gltf-model="#rock-model" anchor-point-editor scale="0.05 0.05 0.05" position="0 0 0"></a-entity>
+      <a-entity id="rock" gltf-model="#rock-model" anchor-point-editor position="0 0 0"></a-entity>
+     
       
-      <a-entity id="rig" movement-controls="fly: true;" custom-controls="speed: 2">
+      <a-entity id="rig" movement-controls="fly: true;" custom-controls="speed: 20">
         <a-entity id="camera" camera look-controls position="0 1.6 0">
           <a-entity cursor="fuse: false;"
                     raycaster="objects: [gltf-model]"
